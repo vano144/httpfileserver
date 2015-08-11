@@ -30,8 +30,6 @@ func main() {
 	}
 	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
-	fs1 := http.FileServer(http.Dir("usersStorage"))
-	http.Handle("/st/", http.StripPrefix("/st/", fs1))
 	http.HandleFunc("/cloud/", homePage)
 	port := flag.String("port", ":9111", "port in server")
 	flag.Parse()
