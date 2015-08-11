@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+   	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   	<title>
+			Notices
+		</title>
+	</head>
+	<body>
+		<h1>Notices</h1>
+		<form enctype="multipart/form-data" action="/cloud/" method="POST">
+   <input type="file" name="myfiles" id="myfiles" multiple="multiple">
+   <input type="submit" name="sendButton" value="send">
+  </form>
+		<ul>
+			{{ range .Info }}
+			<li>{{.Name}}<br>
+				{{.Size}}<br>
+				<p><a href={{.LinkToDownload}} download>Скачать файл</a></p>
+				</li>
+		{{end}}
+		</ul>
+	</body>
+</html>

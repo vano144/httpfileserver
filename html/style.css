@@ -1,0 +1,40 @@
+h1 {
+  color: #F0FFFF;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 24pt;
+  font-family: Georgia, Times, serif;
+}
+body {
+  background-color: #696969;
+}
+Z {
+  color: #F0FFFF;
+  font-weight: normal;
+  font-size: 18pt;
+  font-family: Georgia, Times, serif;
+  font-style: italic;
+
+}
+Z#note {
+  font-size: 14pt;
+  margin-left: 50px;
+  font-style: normal;
+}
+Z#time {
+  font-size: 12pt;
+  margin-left: 50px;
+  font-style: italic;
+}
+z#p {
+  font-size: 12pt;
+  margin-left: 10px;
+  font-style: italic;
+}
+.border-container {
+	border:1px solid white;
+	padding: 5px;
+}
+.ter {
+  color:white;
+}
