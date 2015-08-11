@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path"
@@ -66,6 +67,33 @@ func deleteFile(nameFile string, path string) {
 	os.Remove(path + "/" + nameFile)
 }
 
+func uploadFile(request *http.Request, userPath string) {
+	m := request.MultipartForm
+	files := m.File["myfiles"]
+	for i, _ := range files {
+		saveFile(files[i], userPath)
+	}
+}
+
+func saveFile(fil *multipart.FileHeader, userPath string) {
+	file, err := fil.Open()
+	defer file.Close()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	dest, err := os.Create(userPath + "/" + fil.Filename)
+	defer dest.Close()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if _, err := io.Copy(dest, file); err != nil {
+		log.Println(err)
+		return
+	}
+}
+
 func homePage(writer http.ResponseWriter, request *http.Request) {
 	name, _, successAuth := request.BasicAuth()
 	if successAuth {
@@ -74,26 +102,8 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 		os.MkdirAll(userPath, 0777)
 		request.ParseMultipartForm(0)
 		if reqSend := request.FormValue("sendButton"); reqSend != "" {
-			m := request.MultipartForm
-			files := m.File["myfiles"]
-			for i, _ := range files {
-				file, err := files[i].Open()
-				defer file.Close()
-				if err != nil {
-					log.Println(err)
-					return
-				}
-				dest, err := os.Create(userPath + "/" + files[i].Filename)
-				defer dest.Close()
-				if err != nil {
-					log.Println(err)
-					return
-				}
-				if _, err := io.Copy(dest, file); err != nil {
-					log.Println(err)
-					return
-				}
-			}
+			uploadFile(request, userPath)
+
 		}
 		showEntireFolder(writer, userPath, templt, name)
 	}
