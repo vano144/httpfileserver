@@ -32,6 +32,9 @@ func main() {
 	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/cloud/", homePage)
+	http.HandleFunc("/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, r.URL.Path[1:])
+	})
 	port := flag.String("port", ":9111", "port in server")
 	flag.Parse()
 	if err4 := http.ListenAndServeTLS(*port, "cert.pem", "key.pem", nil); err4 != nil {
@@ -39,7 +42,7 @@ func main() {
 	}
 }
 
-func showEntireFolder(writer http.ResponseWriter, userPath string, temp *template.Template, userName string) {
+func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPath string, temp *template.Template, userName string) {
 	userFolderEntire, err := os.Open(userPath)
 	if err != nil {
 		log.Fatal(err)
@@ -56,7 +59,7 @@ func showEntireFolder(writer http.ResponseWriter, userPath string, temp *templat
 		var obj = FileInfo{
 			Name:           fi.Name(),
 			Size:           fi.Size(),
-			LinkToDownload: "/st/" + userName + "/" + fi.Name(),
+			LinkToDownload: "/" + userPath + "/" + fi.Name(),
 		}
 		sliceFolder.Info = append(sliceFolder.Info, obj)
 	}
@@ -65,6 +68,23 @@ func showEntireFolder(writer http.ResponseWriter, userPath string, temp *templat
 
 func deleteFile(nameFile string, path string) {
 	os.Remove(path + "/" + nameFile)
+}
+
+func homePage(writer http.ResponseWriter, request *http.Request) {
+	name, _, successAuth := request.BasicAuth()
+	if !successAuth {
+		writer.Header().Set("WWW-Authenticate", `Basic realm="protectedpage"`)
+		writer.WriteHeader(401)
+		return
+	}
+	writer.Header().Set("Content-type", "text/html")
+	userPath := "usersStorage/" + name
+	os.MkdirAll(userPath, 0777)
+	request.ParseMultipartForm(0)
+	if reqSend := request.FormValue("sendButton"); reqSend != "" {
+		uploadFile(request, userPath)
+	}
+	showEntireFolder(writer, request, userPath, templt, name)
 }
 
 func uploadFile(request *http.Request, userPath string) {
@@ -92,21 +112,4 @@ func saveFile(fil *multipart.FileHeader, userPath string) {
 		log.Println(err)
 		return
 	}
-}
-
-func homePage(writer http.ResponseWriter, request *http.Request) {
-	name, _, successAuth := request.BasicAuth()
-	if successAuth {
-		writer.Header().Set("Content-type", "text/html")
-		userPath := "usersStorage/" + name
-		os.MkdirAll(userPath, 0777)
-		request.ParseMultipartForm(0)
-		if reqSend := request.FormValue("sendButton"); reqSend != "" {
-			uploadFile(request, userPath)
-
-		}
-		showEntireFolder(writer, userPath, templt, name)
-	}
-	writer.Header().Set("WWW-Authenticate", `Basic realm="protectedpage"`)
-	writer.WriteHeader(401)
 }
