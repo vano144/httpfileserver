@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 )
 
 type FileInfo struct {
@@ -80,6 +81,13 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-type", "text/html")
 	userPath := "usersStorage/" + name
 	os.MkdirAll(userPath, 0777)
+	if a := request.URL.Query().Encode(); request.Method == "GET" && strings.HasSuffix(a, "=delete") {
+		a := strings.Replace(a, "=delete", "", -1)
+		deleteFile(a, userPath)
+		showEntireFolder(writer, request, userPath, templt, name)
+		return
+	}
+
 	request.ParseMultipartForm(0)
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
 		uploadFile(request, userPath)
