@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -16,10 +17,18 @@ type FileInfo struct {
 	Name           string
 	Size           int64
 	LinkToDownload string
+	LinkToDelete   string
 }
-
+type Folder struct {
+	NameFolder       string
+	SizeFolder       int64
+	LinkToStepInside string
+	LinkToDelete     string
+}
 type InfoFile struct {
-	Info []FileInfo
+	Info          []FileInfo
+	ListOfFolders []Folder
+	Owner         string
 }
 
 var templt *template.Template
@@ -56,19 +65,49 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 	}
 	var sliceFolder InfoFile
 	sliceFolder.Info = make([]FileInfo, 0)
+	sliceFolder.ListOfFolders = make([]Folder, 0)
 	for _, fi := range fi {
-		var obj = FileInfo{
-			Name:           fi.Name(),
-			Size:           fi.Size(),
-			LinkToDownload: "/" + userPath + "/" + fi.Name(),
+		if !fi.IsDir() {
+			var obj = FileInfo{
+				Name:           fi.Name(),
+				Size:           fi.Size(),
+				LinkToDownload: "/" + userPath + "/" + fi.Name(),
+				LinkToDelete:   "/cloud/?" + userPath + "/" + fi.Name() + "=delete",
+			}
+			sliceFolder.Info = append(sliceFolder.Info, obj)
+		} else {
+			var fobj = Folder{
+				NameFolder:       fi.Name(),
+				SizeFolder:       fi.Size(),
+				LinkToStepInside: "/cloud/?" + userPath + "/" + fi.Name() + "=StepInside",
+				LinkToDelete:     "/cloud/?" + userPath + "/" + fi.Name() + "=delete",
+			}
+			sliceFolder.ListOfFolders = append(sliceFolder.ListOfFolders, fobj)
 		}
-		sliceFolder.Info = append(sliceFolder.Info, obj)
 	}
+	sliceFolder.Owner = userName
 	temp.Execute(writer, sliceFolder)
 }
 
-func deleteFile(nameFile string, path string) {
-	os.Remove(path + "/" + nameFile)
+func deleteFile(path string) {
+	os.Remove(path)
+}
+
+func toHomeTostepInside(endQuerry string, writer http.ResponseWriter, request *http.Request, userPath string, templt *template.Template, name string) bool {
+	if a := request.URL.RawQuery; request.Method == "GET" && strings.HasSuffix(a, endQuerry) {
+		a := strings.Replace(a, endQuerry, "", -1)
+		if endQuerry == "=delete" {
+			deleteFile(a)
+			showEntireFolder(writer, request, userPath, templt, name)
+			return true
+		}
+		if k, y := regexp.MatchString("usersStorage/"+name+"*", a); k == true && y == nil {
+			userPath = a
+			showEntireFolder(writer, request, userPath, templt, name)
+			return true
+		}
+	}
+	return false
 }
 
 func homePage(writer http.ResponseWriter, request *http.Request) {
@@ -81,13 +120,15 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-type", "text/html")
 	userPath := "usersStorage/" + name
 	os.MkdirAll(userPath, 0777)
-	if a := request.URL.Query().Encode(); request.Method == "GET" && strings.HasSuffix(a, "=delete") {
-		a := strings.Replace(a, "=delete", "", -1)
-		deleteFile(a, userPath)
-		showEntireFolder(writer, request, userPath, templt, name)
+	if toHomeTostepInside("=delete", writer, request, userPath, templt, name) {
 		return
 	}
-
+	if toHomeTostepInside("=ToHome", writer, request, userPath, templt, name) {
+		return
+	}
+	if toHomeTostepInside("=StepInside", writer, request, userPath, templt, name) {
+		return
+	}
 	request.ParseMultipartForm(0)
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
 		uploadFile(request, userPath)
