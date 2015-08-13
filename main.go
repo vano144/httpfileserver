@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -89,15 +90,19 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 	temp.Execute(writer, sliceFolder)
 }
 
-func deleteFile(path string) {
-	os.Remove(path)
+func deleteFile(path string) bool {
+	err := os.Remove(path)
+	if err != nil {
+		log.Println(err, "error of deleting file")
+		return false
+	}
+	return true
 }
 
 func toHomeTostepInside(endQuerry string, writer http.ResponseWriter, request *http.Request, userPath string, templt *template.Template, name string) bool {
 	if a := request.URL.RawQuery; request.Method == "GET" && strings.HasSuffix(a, endQuerry) {
 		a := strings.Replace(a, endQuerry, "", -1)
-		if endQuerry == "=delete" {
-			deleteFile(a)
+		if endQuerry == "=delete" && deleteFile(a) {
 			showEntireFolder(writer, request, userPath, templt, name)
 			return true
 		}
@@ -119,7 +124,10 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 	}
 	writer.Header().Set("Content-type", "text/html")
 	userPath := "usersStorage/" + name
-	os.MkdirAll(userPath, 0777)
+	err := os.MkdirAll(userPath, 0777)
+	if err != nil {
+		log.Fatal(err, "error of creating file")
+	}
 	if toHomeTostepInside("=delete", writer, request, userPath, templt, name) {
 		return
 	}
@@ -131,6 +139,9 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 	}
 	request.ParseMultipartForm(0)
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
+		//a := request.URL.RawQuery
+		//a := strings.Replace(a, endQuerry, "", -1)
+		//userPath = a
 		uploadFile(request, userPath)
 	}
 	showEntireFolder(writer, request, userPath, templt, name)
