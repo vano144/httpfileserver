@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
+	"regexp"
 )
 
 type FileInfo struct {
@@ -34,7 +34,11 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/cloud/", homePage)
 	http.HandleFunc("/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, r.URL.Path[1:])
+		a := r.URL.String()
+		name, _, successAuth := r.BasicAuth()
+		if k, y := regexp.MatchString("usersStorage/"+name+"*", a); k == true && y == nil && successAuth {
+			http.ServeFile(w, r, "/usersStorage/"+name)
+		}
 	})
 	port := flag.String("port", ":9111", "port in server")
 	flag.Parse()
@@ -89,17 +93,23 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		log.Fatal(err, "problem with creating user's directory")
 	}
-	if a := request.URL.Query().Encode(); request.Method == "GET" && strings.HasSuffix(a, "=delete") {
-		a := strings.Replace(a, "=delete", "", -1)
-		if deleteFile(a, userPath) {
-			showEntireFolder(writer, request, userPath, templt, name)
-		}
-		return
+	err = request.ParseMultipartForm(0)
+	if err != nil {
+		log.Println(err, "problem with parsing")
 	}
-
-	request.ParseMultipartForm(0)
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
 		uploadFile(request, userPath)
+		showEntireFolder(writer, request, userPath, templt, name)
+		return
+	}
+	if reqSend := request.FormValue("deleteButton"); reqSend != "" {
+		if slice, found := request.Form["option"]; found && len(slice) > 0 {
+			for i, _ := range slice {
+				deleteFile(slice[i], userPath)
+			}
+		}
+		showEntireFolder(writer, request, userPath, templt, name)
+		return
 	}
 	showEntireFolder(writer, request, userPath, templt, name)
 }

@@ -11,16 +11,16 @@
 		<form enctype="multipart/form-data" action="/cloud/" method="POST">
    <input type="file" name="myfiles" id="myfiles" multiple="multiple">
    <input type="submit" name="sendButton" value="send">
-  </form>
+   <input type="submit" name="deleteButton" value="delete">
+
 		<ul>
 			{{ range .Info }}
-			<li>{{.Name}}<br>
+			<li>{{.Name}} <input type="checkbox" name="option"  value="{{.Name}}"><br>
 				{{.Size}}<br>
 				<p><a href={{.LinkToDownload}} download>Скачать файл</a></p>
-				<p><a href="/cloud/?{{.Name}}=delete">Delete file</a></p>
 				</li>
 		{{end}}
 		</ul>
-		<ul>
+		</form>
 	</body>
 </html>
