@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 )
 
@@ -18,18 +16,10 @@ type FileInfo struct {
 	Name           string
 	Size           int64
 	LinkToDownload string
-	LinkToDelete   string
 }
-type Folder struct {
-	NameFolder       string
-	SizeFolder       int64
-	LinkToStepInside string
-	LinkToDelete     string
-}
+
 type InfoFile struct {
-	Info          []FileInfo
-	ListOfFolders []Folder
-	Owner         string
+	Info []FileInfo
 }
 
 var templt *template.Template
@@ -66,53 +56,24 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 	}
 	var sliceFolder InfoFile
 	sliceFolder.Info = make([]FileInfo, 0)
-	sliceFolder.ListOfFolders = make([]Folder, 0)
 	for _, fi := range fi {
-		if !fi.IsDir() {
-			var obj = FileInfo{
-				Name:           fi.Name(),
-				Size:           fi.Size(),
-				LinkToDownload: "/" + userPath + "/" + fi.Name(),
-				LinkToDelete:   "/cloud/?" + userPath + "/" + fi.Name() + "=delete",
-			}
-			sliceFolder.Info = append(sliceFolder.Info, obj)
-		} else {
-			var fobj = Folder{
-				NameFolder:       fi.Name(),
-				SizeFolder:       fi.Size(),
-				LinkToStepInside: "/cloud/?" + userPath + "/" + fi.Name() + "=StepInside",
-				LinkToDelete:     "/cloud/?" + userPath + "/" + fi.Name() + "=delete",
-			}
-			sliceFolder.ListOfFolders = append(sliceFolder.ListOfFolders, fobj)
+		var obj = FileInfo{
+			Name:           fi.Name(),
+			Size:           fi.Size(),
+			LinkToDownload: "/" + userPath + "/" + fi.Name(),
 		}
+		sliceFolder.Info = append(sliceFolder.Info, obj)
 	}
-	sliceFolder.Owner = userName
 	temp.Execute(writer, sliceFolder)
 }
 
-func deleteFile(path string) bool {
-	err := os.Remove(path)
+func deleteFile(nameFile string, path string) bool {
+	err := os.Remove(path + "/" + nameFile)
 	if err != nil {
-		log.Println(err, "error of deleting file")
+		log.Println(err, "problem with deleting file")
 		return false
 	}
 	return true
-}
-
-func toHomeTostepInside(endQuerry string, writer http.ResponseWriter, request *http.Request, userPath string, templt *template.Template, name string) bool {
-	if a := request.URL.RawQuery; request.Method == "GET" && strings.HasSuffix(a, endQuerry) {
-		a := strings.Replace(a, endQuerry, "", -1)
-		if endQuerry == "=delete" && deleteFile(a) {
-			showEntireFolder(writer, request, userPath, templt, name)
-			return true
-		}
-		if k, y := regexp.MatchString("usersStorage/"+name+"*", a); k == true && y == nil {
-			userPath = a
-			showEntireFolder(writer, request, userPath, templt, name)
-			return true
-		}
-	}
-	return false
 }
 
 func homePage(writer http.ResponseWriter, request *http.Request) {
@@ -126,22 +87,18 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 	userPath := "usersStorage/" + name
 	err := os.MkdirAll(userPath, 0777)
 	if err != nil {
-		log.Fatal(err, "error of creating file")
+		log.Fatal(err, "problem with creating user's directory")
 	}
-	if toHomeTostepInside("=delete", writer, request, userPath, templt, name) {
+	if a := request.URL.Query().Encode(); request.Method == "GET" && strings.HasSuffix(a, "=delete") {
+		a := strings.Replace(a, "=delete", "", -1)
+		if deleteFile(a, userPath) {
+			showEntireFolder(writer, request, userPath, templt, name)
+		}
 		return
 	}
-	if toHomeTostepInside("=ToHome", writer, request, userPath, templt, name) {
-		return
-	}
-	if toHomeTostepInside("=StepInside", writer, request, userPath, templt, name) {
-		return
-	}
+
 	request.ParseMultipartForm(0)
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
-		//a := request.URL.RawQuery
-		//a := strings.Replace(a, endQuerry, "", -1)
-		//userPath = a
 		uploadFile(request, userPath)
 	}
 	showEntireFolder(writer, request, userPath, templt, name)

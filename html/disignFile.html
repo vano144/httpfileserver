@@ -17,19 +17,10 @@
 			<li>{{.Name}}<br>
 				{{.Size}}<br>
 				<p><a href={{.LinkToDownload}} download>Скачать файл</a></p>
-				<p><a href={{.LinkToDelete}}>Delete file</a></p>
+				<p><a href="/cloud/?{{.Name}}=delete">Delete file</a></p>
 				</li>
 		{{end}}
 		</ul>
 		<ul>
-			{{ range .ListOfFolders }}
-			<li>{{.NameFolder}}<br>
-				{{.SizeFolder}}<br>
-				<p><a href={{.LinkToStepInside}}>ShowEntire</a></p>
-				<p><a href={{.LinkToDelete}}>Delete file</a></p>
-				</li>
-		{{end}}
-		</ul>
-		<p><a href="/cloud/?usersStorage/{{.Owner}}=ToHome">HomeButton</a></p>
 	</body>
 </html>
