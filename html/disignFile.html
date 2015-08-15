@@ -29,7 +29,7 @@
    <z id="p"><input type="file" name="myfiles" id="myfiles" multiple="multiple"></z>
       <br>
 		<ul>
-			{{ range .Info }}
+			{{ range . }}
 			<li>
 			 <input type="checkbox" name="option"  value="{{.Name}}"> <z id="note">{{.Name}}</z>
 				<z id="note">Size: {{.Size}}</z><br>

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -19,10 +18,6 @@ type FileInfo struct {
 	LinkToDownload string
 }
 
-type InfoFile struct {
-	Info []FileInfo
-}
-
 var templt *template.Template
 
 func main() {
@@ -35,11 +30,13 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/cloud/", homePage)
 
-	http.HandleFunc("/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/cloud/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
 		a := r.URL.String()
 		name, _, successAuth := r.BasicAuth()
-		if k, y := regexp.MatchString("usersStorage/"+name+"*", a); k == true && y == nil && successAuth {
-			http.ServeFile(w, r, "/usersStorage/"+name)
+		if k, y := regexp.MatchString("/cloud/usersStorage/"+name+"*", a); k == true && y == nil && successAuth {
+			http.ServeFile(w, r, "/cloud/usersStorage/"+name)
+		} else {
+			http.Error(w, "protected page", http.StatusForbidden)
 		}
 	})
 
@@ -53,64 +50,64 @@ func main() {
 func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPath string, temp *template.Template, userName string) {
 	userFolderEntire, err := os.Open(userPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(writer, "problem with userpath", http.StatusBadRequest)
+		return
 	}
-
-	defer userFolderEntire.Close()
 	fi, err := userFolderEntire.Readdir(-1)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		http.Error(writer, "problem with userpath", http.StatusBadRequest)
+		return
 	}
-	var sliceFolder InfoFile
-	sliceFolder.Info = make([]FileInfo, 0)
+	defer userFolderEntire.Close()
+	var SliceFolder []FileInfo
+	SliceFolder = make([]FileInfo, 0)
 	for _, fi := range fi {
 		var obj = FileInfo{
 			Name:           fi.Name(),
 			Size:           fi.Size(),
-			LinkToDownload: "/" + userPath + "/" + fi.Name(),
+			LinkToDownload: "/cloud/" + userPath + "/" + fi.Name(),
 		}
-		sliceFolder.Info = append(sliceFolder.Info, obj)
+		SliceFolder = append(SliceFolder, obj)
 	}
-	temp.Execute(writer, sliceFolder)
+	temp.Execute(writer, SliceFolder)
 }
 
-func deleteFile(nameFile string, path string) bool {
+func deleteFile(nameFile string, path string) error {
 	err := os.Remove(path + "/" + nameFile)
 	if err != nil {
 		log.Println(err, "problem with deleting file")
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 func homePage(writer http.ResponseWriter, request *http.Request) {
 	name, _, successAuth := request.BasicAuth()
 	if !successAuth {
 		writer.Header().Set("WWW-Authenticate", `Basic realm="protectedpage"`)
-		writer.WriteHeader(401)
+		http.Error(writer, "bad auth", http.StatusUnauthorized)
 		return
 	}
 	writer.Header().Set("Content-type", "text/html")
-	userPath := "usersStorage/" + name
+	userPath := "cloud/usersStorage/" + name
 	err := os.MkdirAll(userPath, 0777)
 	if err != nil {
-		log.Fatal(err, "problem with creating user's directory")
+		log.Println(err, "problem with creating user's directory")
+		http.Error(writer, "problen with user path", http.StatusBadRequest)
 	}
-	err = request.ParseMultipartForm(0)
-	if err != nil {
-		log.Println(err, "problem with parsing")
-	}
+
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
-		fmt.Println(request.URL.RawQuery, "1")
 		uploadFile(request, userPath)
 		showEntireFolder(writer, request, userPath, templt, name)
 		return
 	}
 	if reqSend := request.FormValue("deleteButton"); reqSend != "" {
-		fmt.Println(request.URL.RawQuery, "2")
-		if slice, found := request.Form["option"]; found && len(slice) > 0 {
-			for i, _ := range slice {
-				deleteFile(slice[i], userPath)
+		slice, found := request.Form["option"]
+		for i, _ := range slice {
+			if err = deleteFile(slice[i], userPath); err != nil && found {
+				http.Error(writer, "problem with deleting", http.StatusBadRequest)
 			}
 		}
 		showEntireFolder(writer, request, userPath, templt, name)
@@ -129,17 +126,17 @@ func uploadFile(request *http.Request, userPath string) {
 
 func saveFile(fil *multipart.FileHeader, userPath string) {
 	file, err := fil.Open()
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	defer file.Close()
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	dest, err := os.Create(userPath + "/" + fil.Filename)
-	defer dest.Close()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer dest.Close()
 	if _, err := io.Copy(dest, file); err != nil {
 		log.Println(err)
 		return
