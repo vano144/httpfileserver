@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -10,6 +12,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 )
 
 type FileInfo struct {
@@ -34,7 +37,7 @@ func main() {
 		a := r.URL.String()
 		name, _, successAuth := r.BasicAuth()
 		if k, y := regexp.MatchString("/cloud/usersStorage/"+name+"*", a); k == true && y == nil && successAuth {
-			http.ServeFile(w, r, "/cloud/usersStorage/"+name)
+			http.ServeFile(w, r, a)
 		} else {
 			http.Error(w, "protected page", http.StatusForbidden)
 		}
@@ -48,6 +51,7 @@ func main() {
 }
 
 func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPath string, temp *template.Template, userName string) {
+
 	userFolderEntire, err := os.Open(userPath)
 	if err != nil {
 		log.Println(err)
@@ -70,6 +74,21 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 			LinkToDownload: "/cloud/" + userPath + "/" + fi.Name(),
 		}
 		SliceFolder = append(SliceFolder, obj)
+	}
+	stri := fmt.Sprint(request.Header.Get("Accept"))
+	fmt.Println(stri)
+	controlQuerry := strings.Contains(stri, "application/json")
+	if controlQuerry {
+		notesJson, erro := json.Marshal(SliceFolder)
+		if erro != nil {
+			log.Println("Error Json")
+			return
+		}
+		writer.Header().Set("Content-type", "application/json")
+		writer.Write(notesJson)
+		fmt.Println(notesJson)
+		fmt.Println("true")
+		return
 	}
 	temp.Execute(writer, SliceFolder)
 }
