@@ -34,6 +34,7 @@ func main() {
 	fs := http.FileServer(http.Dir("html"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/cloud/", homePage)
+
 	http.HandleFunc("/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
 		a := r.URL.String()
 		name, _, successAuth := r.BasicAuth()
@@ -41,6 +42,7 @@ func main() {
 			http.ServeFile(w, r, "/usersStorage/"+name)
 		}
 	})
+
 	port := flag.String("port", ":9111", "port in server")
 	flag.Parse()
 	if err4 := http.ListenAndServeTLS(*port, "cert.pem", "key.pem", nil); err4 != nil {
