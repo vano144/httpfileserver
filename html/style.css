@@ -5,11 +5,14 @@ h1 {
   font-size: 24pt;
   font-family: Georgia, Times, serif;
 }
-body {
-  background-color: #696969;
+div {
+  background-color: #D8D8D8;
+}
+html {
+  background-color: #D8D8D8;
 }
 Z {
-  color: #F0FFFF;
+  color: #2ECCFA;
   font-weight: normal;
   font-size: 18pt;
   font-family: Georgia, Times, serif;
@@ -29,7 +32,12 @@ Z#time {
 z#p {
   font-size: 12pt;
   margin-left: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   font-style: italic;
+}
+z#gr {
+  margin-left: 10px;
 }
 .border-container {
 	border:1px solid white;

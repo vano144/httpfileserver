@@ -2,25 +2,42 @@
 <html>
   <head>
    	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   	<link rel="stylesheet" href="style.css">
+   	<link rel="icon" type="image/png" href="/static/favicon.png" >
+		<link rel="stylesheet" href="bootstrap.min.css">
    	<title>
-			Notices
+			Http file server
 		</title>
+		<style>
+	@import url("/static/bootstrap.min.css");
+	@import url("/static/bootstrap.min.js");
+	@import url("/static/style.css");
+	@import url("/static/favicon.ico");
+		</style>
 	</head>
 	<body>
-		<h1>Notices</h1>
+	<div>
+		<h1><z>Http file server</z></h1>
 		<form enctype="multipart/form-data" action="/cloud/" method="POST">
-   <input type="file" name="myfiles" id="myfiles" multiple="multiple">
-   <input type="submit" name="sendButton" value="send">
-   <input type="submit" name="deleteButton" value="delete">
-
+		<z id="gr">
+		<div class="btn-group">
+   <input type="submit" class="btn btn-success" name="sendButton" value="send">
+   <input type="submit" class="btn btn-danger" name="deleteButton" value="delete">
+   </div>
+   </z>
+   <br>
+   <z id="p"><input type="file" name="myfiles" id="myfiles" multiple="multiple"></z>
+      <br>
 		<ul>
 			{{ range .Info }}
-			<li>{{.Name}} <input type="checkbox" name="option"  value="{{.Name}}"><br>
-				{{.Size}}<br>
-				<p><a href={{.LinkToDownload}} download>Скачать файл</a></p>
+			<li>
+			 <input type="checkbox" name="option"  value="{{.Name}}"> <z id="note">{{.Name}}</z>
+				<z id="note">Size: {{.Size}}</z><br>
+				<z id="time"><a class="btn btn-primary " href={{.LinkToDownload}} download>Скачать файл</a></z>
 				</li>
 		{{end}}
 		</ul>
 		</form>
+	</div>
 	</body>
 </html>

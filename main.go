@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -98,11 +99,13 @@ func homePage(writer http.ResponseWriter, request *http.Request) {
 		log.Println(err, "problem with parsing")
 	}
 	if reqSend := request.FormValue("sendButton"); reqSend != "" {
+		fmt.Println(request.URL.RawQuery, "1")
 		uploadFile(request, userPath)
 		showEntireFolder(writer, request, userPath, templt, name)
 		return
 	}
 	if reqSend := request.FormValue("deleteButton"); reqSend != "" {
+		fmt.Println(request.URL.RawQuery, "2")
 		if slice, found := request.Form["option"]; found && len(slice) > 0 {
 			for i, _ := range slice {
 				deleteFile(slice[i], userPath)
