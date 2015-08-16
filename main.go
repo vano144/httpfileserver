@@ -76,9 +76,7 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 		SliceFolder = append(SliceFolder, obj)
 	}
 	stri := fmt.Sprint(request.Header.Get("Accept"))
-	fmt.Println(stri)
-	controlQuerry := strings.Contains(stri, "application/json")
-	if controlQuerry {
+	if controlQuerry := strings.Contains(stri, "application/json"); controlQuerry {
 		notesJson, erro := json.Marshal(SliceFolder)
 		if erro != nil {
 			log.Println("Error Json")
@@ -86,9 +84,15 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 		}
 		writer.Header().Set("Content-type", "application/json")
 		writer.Write(notesJson)
-		fmt.Println(notesJson)
-		fmt.Println("true")
 		return
+	}
+	stri = fmt.Sprint(request.Header.Get("Action"))
+	fmt.Println(stri)
+	if controlQuerry := strings.Contains(stri, "delete"); controlQuerry {
+		a := strings.Fields(stri)
+		if err = deleteFile(a[1], userPath); err != nil {
+			http.Error(writer, "problem with deleting", http.StatusBadRequest)
+		}
 	}
 	temp.Execute(writer, SliceFolder)
 }
