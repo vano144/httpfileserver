@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -87,13 +88,32 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 		return
 	}
 	stri = fmt.Sprint(request.Header.Get("Action"))
-	fmt.Println(stri)
 	if controlQuerry := strings.Contains(stri, "delete"); controlQuerry {
 		a := strings.Fields(stri)
 		if err = deleteFile(a[1], userPath); err != nil {
 			http.Error(writer, "problem with deleting", http.StatusBadRequest)
 		}
+		return
 	}
+
+	if controlQuerry := strings.Contains(stri, "upload"); controlQuerry {
+		a := strings.Fields(stri)
+		dest, err := os.Create(userPath + "/" + a[1])
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer dest.Close()
+		body := &bytes.Buffer{}
+		body.ReadFrom(request.Body)
+		request.Body.Close()
+		if _, err := io.Copy(dest, body); err != nil {
+			log.Println(err)
+			return
+		}
+		return
+	}
+
 	temp.Execute(writer, SliceFolder)
 }
 
