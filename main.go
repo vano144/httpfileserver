@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"regexp"
+	//"regexp"
 	"strings"
 )
 
@@ -37,8 +37,11 @@ func main() {
 	http.HandleFunc("/cloud/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
 		a := r.URL.String()
 		name, _, successAuth := r.BasicAuth()
-		if k, y := regexp.MatchString("/cloud/usersStorage/"+name+"*", a); k == true && y == nil && successAuth {
-			http.ServeFile(w, r, a)
+		if successAuth {
+			b := strings.Split(a, "/")
+			cd := "cloud/usersStorage/" + name + "/" + b[len(b)-1]
+			http.ServeFile(w, r, cd)
+
 		} else {
 			http.Error(w, "protected page", http.StatusForbidden)
 		}
@@ -72,7 +75,7 @@ func showEntireFolder(writer http.ResponseWriter, request *http.Request, userPat
 		var obj = FileInfo{
 			Name:           fi.Name(),
 			Size:           fi.Size(),
-			LinkToDownload: "/cloud/" + userPath + "/" + fi.Name(),
+			LinkToDownload: "/cloud/usersStorage/" + fi.Name(),
 		}
 		SliceFolder = append(SliceFolder, obj)
 	}
