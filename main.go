@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	//"regexp"
 	"strings"
 )
 
@@ -35,12 +34,12 @@ func main() {
 	http.HandleFunc("/cloud/", homePage)
 
 	http.HandleFunc("/cloud/usersStorage/", func(w http.ResponseWriter, r *http.Request) {
-		a := r.URL.String()
+		Url := r.URL.String()
 		name, _, successAuth := r.BasicAuth()
 		if successAuth {
-			b := strings.Split(a, "/")
-			cd := "cloud/usersStorage/" + name + "/" + b[len(b)-1]
-			http.ServeFile(w, r, cd)
+			urlSlice := strings.Split(Url, "/")
+			pathToFile := "cloud/usersStorage/" + name + "/" + urlSlice[len(urlSlice)-1]
+			http.ServeFile(w, r, pathToFile)
 
 		} else {
 			http.Error(w, "protected page", http.StatusForbidden)
